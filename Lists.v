@@ -980,7 +980,12 @@ Qed.
 
 Theorem rev_injective' : forall l1 l2:natlist, rev l1 = rev l2 -> l1 = l2.
 Proof.
-Abort.
+  intros l1.
+  induction l1 as [|n1 l1' IHl1'].
+  - intros. Search rev. simpl in H. Search rev. rewrite <- rev_involutive. rewrite <- H.
+      reflexivity.
+  - intros. rewrite <- rev_involutive. rewrite <- H. rewrite rev_involutive. reflexivity.
+Qed.
   
 (** Prove that the [rev] function is injective -- that is,
 
@@ -1076,17 +1081,20 @@ Definition option_elim (d : nat) (o : natoption) : nat :=
 (** Using the same idea, fix the [hd] function from earlier so we don't
     have to pass a default element for the [nil] case.  *)
 
-Definition hd_error (l : natlist) : natoption
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition hd_error (l : natlist) : natoption :=
+    match l with
+      | [] => None
+      | h::tl => Some h
+    end.
 
 Example test_hd_error1 : hd_error [] = None.
- (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example test_hd_error2 : hd_error [1] = Some 1.
- (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example test_hd_error3 : hd_error [5;6] = Some 5.
- (* FILL IN HERE *) Admitted.
+ Proof. reflexivity. Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, optional (option_elim_hd)  *)
@@ -1095,7 +1103,11 @@ Example test_hd_error3 : hd_error [5;6] = Some 5.
 Theorem option_elim_hd : forall (l:natlist) (default:nat),
   hd default l = option_elim default (hd_error l).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros l d.
+  induction l as [|n l' IHl'].
+  - reflexivity.
+  - reflexivity.
+Qed.
 (** [] *)
 
 End NatList.
@@ -1129,7 +1141,12 @@ Definition beq_id (x1 x2 : id) :=
 (** **** Exercise: 1 star (beq_id_refl)  *)
 Theorem beq_id_refl : forall x, true = beq_id x x.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x.
+  destruct x as [ x'].
+  simpl.
+  Search beq_nat.
+  apply beq_nat_refl.
+Qed.
 (** [] *)
 
 (** Now we define the type of partial maps: *)
@@ -1176,7 +1193,11 @@ Theorem update_eq :
   forall (d : partial_map) (x : id) (v: nat),
     find x (update d x v) = Some v.
 Proof.
- (* FILL IN HERE *) Admitted.
+    intros d x v.
+    simpl. assert(H: beq_id x x = true). 
+    - rewrite <-beq_id_refl. reflexivity.
+    - rewrite H. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star (update_neq)  *)
@@ -1184,7 +1205,9 @@ Theorem update_neq :
   forall (d : partial_map) (x y : id) (o: nat),
     beq_id x y = false -> find x (update d y o) = find x d.
 Proof.
- (* FILL IN HERE *) Admitted.
+   intros d x y o H.
+   simpl. rewrite H. reflexivity.
+Qed.
 (** [] *)
 End PartialMap.
 
@@ -1197,7 +1220,7 @@ Inductive baz : Type :=
 
 (** How _many_ elements does the type [baz] have?
     (Explain your answer in words, preferrably English.) *)
-
+(*0*)
 (* FILL IN HERE *)
 (** [] *)
 
