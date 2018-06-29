@@ -1,5 +1,5 @@
 (** * Logic: Logic in Coq *)
-
+Add LoadPath "~/pro/coq/If".
 Set Warnings "-notation-overridden,-parsing". 
 Require Export Tactics.
 
@@ -879,18 +879,19 @@ Lemma All_In :
     (forall x, In x l -> P x) <->
     All P l.
 Proof.
-   intros T P l.
+   intros T P.
    split.
    - induction l as [|n l' IHl'].
-      + intros. simpl. apply I.
+      + simpl. intros. apply I.
       + intros. simpl. split.
          * apply H. simpl. left. reflexivity.
          * apply IHl'. intros x HIn. apply H. simpl. right. apply HIn.
    -  intros H. induction l as [|n l' IHl'].
       + intros. simpl in H0. inversion H0.
-      + intros x HIn. apply IHl'.
-          * simpl in H. destruct H as [Hp HA]. apply HA.
-          * simpl in HIn. simpl in H. destruct H as [Hp HA].
+      + intros x HIn. simpl in H. simpl in HIn. destruct HIn as [Hn | HIn].
+        * rewrite <- Hn. destruct H as [Hn' HA]. apply Hn'.
+        * destruct H as [Hn  HA]. apply (IHl' HA). apply HIn.
+Qed.
             
 (** [] *)
 
@@ -901,8 +902,8 @@ Proof.
     equivalent to [Podd n] when [n] is odd and equivalent to [Peven n]
     otherwise. *)
 
-Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+    fun (n:nat) => if (oddb n) then Podd n else Peven n.
 
 (** To test your definition, prove the following facts: *)
 
@@ -912,7 +913,13 @@ Theorem combine_odd_even_intro :
     (oddb n = false -> Peven n) ->
     combine_odd_even Podd Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n Hodd Heven.
+  unfold combine_odd_even.
+  destruct (oddb n)  eqn : H1.
+  - apply Hodd;reflexivity.
+  - apply Heven;reflexivity.
+Qed. 
+  
 
 Theorem combine_odd_even_elim_odd :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -920,7 +927,10 @@ Theorem combine_odd_even_elim_odd :
     oddb n = true ->
     Podd n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n Hoe Ho.
+  unfold combine_odd_even in Hoe. rewrite Ho in Hoe. apply Hoe.
+Qed.
+  
 
 Theorem combine_odd_even_elim_even :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -928,7 +938,9 @@ Theorem combine_odd_even_elim_even :
     oddb n = false ->
     Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Podd Peven n Hoe He.
+  unfold combine_odd_even in Hoe. rewrite He in Hoe. apply Hoe.
+  Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -1154,17 +1166,30 @@ Fixpoint rev_append {X} (l1 l2 : list X) : list X :=
   | x :: l1' => rev_append l1' (x :: l2)
   end.
 
+
+
 Definition tr_rev {X} (l : list X) : list X :=
   rev_append l [].
-
+Theorem rev_distr_lrz: forall X (l r:list X), tr_rev (l ++ r) = (tr_rev r) ++ (tr_rev l).
+Proof.
+  intros X l r.
+  induction l as [|n l' IHl'].
+  - simpl. unfold tr_rev. simpl. Search (_ ++ [] = _). rewrite app_nil_r. reflexivity.
+  - simpl. unfold tr_rev. simpl. unfold tr_rev in IHl'.  unfold rev_append. simpl.
 (** This version is said to be _tail-recursive_, because the recursive
     call to the function is the last operation that needs to be
-    performed (i.e., we don't have to execute [++] after the recursive
     call); a decent compiler will generate very efficient code in this
+    performed (i.e., we don't have to execute [++] after the recursive
     case.  Prove that the two definitions are indeed equivalent. *)
 
 Lemma tr_rev_correct : forall X, @tr_rev X = @rev X.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros X.
+  apply functional_extensionality.
+  intros x.
+  induction x as [| n x' IHx'].
+  - reflexivity.
+  - simpl.
 (** [] *)
 
 (* ================================================================= *)
