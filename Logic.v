@@ -1,4 +1,4 @@
-(** * Logic: Logic in Coq *)
+(** * Logic: Logic in Coq *) 
 Add LoadPath "$COQPATH".
 Set Warnings "-notation-overridden,-parsing". 
 Require Export Tactics.

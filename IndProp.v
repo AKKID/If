@@ -3,6 +3,8 @@
 Set Warnings "-notation-overridden,-parsing".
 Require Export Logic.
 Require Coq.omega.Omega.
+Check evenb.
+
 
 (* ################################################################# *)
 (** * Inductively Defined Propositions *)
@@ -130,8 +132,12 @@ Qed.
 Theorem ev_double : forall n,
   ev (double n).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+   intros n.
+   induction n as [|n' IHn'].
+  - apply ev_0.
+  - simpl. apply ev_SS. apply IHn'.
+Qed.
+(** [] *) 
 
 (* ################################################################# *)
 (** * Using Evidence in Proofs *)
@@ -274,7 +280,11 @@ Proof.
 Theorem SSSSev__even : forall n,
   ev (S (S (S (S n)))) -> ev n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n E.
+  inversion E. 
+  inversion H0.
+  apply H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star (even5_nonsense)  *)
@@ -283,7 +293,11 @@ Proof.
 Theorem even5_nonsense :
   ev 5 -> 2 + 2 = 9.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H.
+  inversion H.
+  inversion H1.
+  inversion H3.
+Qed.
 (** [] *)
 
 (** The way we've used [inversion] here may seem a bit
@@ -315,7 +329,7 @@ Proof.
 Lemma ev_even_firsttry : forall n,
   ev n -> exists k, n = double k.
 Proof.
-(* WORKED IN CLASS *)
+
 
 (** We could try to proceed by case analysis or induction on [n].  But
     since [ev] is mentioned in a premise, this strategy would probably
@@ -355,7 +369,7 @@ Admitted.
 
 (* ================================================================= *)
 (** ** Induction on Evidence *)
-
+ 
 (** If this looks familiar, it is no coincidence: We've encountered
     similar problems in the [Induction] chapter, when trying to use
     case analysis to prove results that required induction.  And once
@@ -409,9 +423,12 @@ Qed.
 (** **** Exercise: 2 stars (ev_sum)  *)
 Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m Hn Hm.
+  induction Hn as [|n' IHn' IHnm].
+  - simpl. apply Hm.
+  - simpl. apply ev_SS. apply IHnm.
 (** [] *)
-
+Qed.
 (** **** Exercise: 4 stars, advanced, optional (ev'_ev)  *)
 (** In general, there may be multiple ways of defining a
     property inductively.  For example, here's a (slightly contrived)
@@ -428,8 +445,20 @@ Inductive ev' : nat -> Prop :=
 
 Theorem ev'_ev : forall n, ev' n <-> ev n.
 Proof.
- (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros n.
+  split.
+  - intros H'n.
+      induction H'n.
+      + apply ev_0.
+      + apply ev_SS. apply ev_0.
+      + apply ev_sum.
+          * apply IHH'n1. * apply IHH'n2.
+ - intros. induction H as [|n' E IHn].
+      + apply ev'_0.
+      + apply (ev'_sum 2 n').
+          * apply ev'_2.
+          * apply IHn.
+Qed.
 
 (** **** Exercise: 3 stars, advanced, recommended (ev_ev__ev)  *)
 (** Finding the appropriate thing to do induction on is a
@@ -438,7 +467,11 @@ Proof.
 Theorem ev_ev__ev : forall n m,
   ev (n+m) -> ev n -> ev m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m Hnm Hn.
+  induction Hn as [|n' E IHn'].
+  - simpl in Hnm. apply Hnm.
+  - apply IHn'. simpl in Hnm. apply evSS_ev in Hnm. apply Hnm.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, optional (ev_plus_plus)  *)
@@ -449,7 +482,18 @@ Proof.
 Theorem ev_plus_plus : forall n m p,
   ev (n+m) -> ev (n+p) -> ev (m+p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+   intros n m p Hnm Hnp.
+   apply (ev_sum (n+m)(n+p) Hnm) in Hnp.
+   (*rewrite plus_assoc in Hnp.*)
+   assert(H:  m + (n + p) =n + m + p). Check plus_comm.
+  +  rewrite plus_assoc. rewrite (plus_comm m n). reflexivity.
+  + rewrite <- plus_assoc in Hnp. rewrite  H in Hnp.  rewrite <- plus_assoc in Hnp. 
+      assert(H1:ev (n + n)).
+      * Search (ev (_ + _)). rewrite ev_even_iff. exists n. Search double. rewrite double_plus. reflexivity.
+      * apply (ev_ev__ev (n+n) (m+p)). 
+          { rewrite <- plus_assoc. apply Hnp. }
+          { apply H1. }
+Qed.
 (** [] *)
 
 (* ################################################################# *)
