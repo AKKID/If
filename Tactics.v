@@ -11,9 +11,10 @@
     - how to strengthen an induction hypothesis (and when such
       strengthening is required); and
     - more details on how to reason by case analysis. *)
-Add LoadPath "~/pro/coq/If".
+(*Add LoadPath "~/pro/coq/If".*)
 Set Warnings "-notation-overridden,-parsing".
 Require Export Poly.
+Check evenb.
 
 
 (* ################################################################# *)

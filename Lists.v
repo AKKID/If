@@ -1,5 +1,5 @@
 (** * Lists: Working with Structured Data *)
-Add LoadPath "~/pro/coq/If".
+(*Add LoadPath "~/pro/coq/If".*)
 Require Export Induction.
 Module NatList.
 Check day.

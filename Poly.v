@@ -4,9 +4,10 @@
    publicly accessible places.  Thank you!! *)
 
 (* Suppress some annoying warnings from Coq: *)
-Add LoadPath "~/pro/coq/If".
+(*Add LoadPath "~/pro/coq/If".*)
 Set Warnings "-notation-overridden,-parsing".
 Require Export Lists.
+Check evenb.
 
 (* ################################################################# *)
 (** * FULL: Polymorphism *)

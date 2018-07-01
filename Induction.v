@@ -2,7 +2,7 @@
 
 (** Before getting started, we need to import all of our
     definitions from the previous chapter: *)
-Add LoadPath "~/pro/coq/If".
+Add LoadPath "$COQPATH".
 Require Export Basics.
 Check evenb.
 
