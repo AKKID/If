@@ -54,6 +54,10 @@ Import ListNotations.
 Definition beq_string x y :=
   if string_dec x y then true else false.
 
+Check beq_string.
+Check string_dec.
+
+
 (** (The function [string_dec] comes from Coq's string library.
     If you check the result type of [string_dec], you'll see that it
     does not actually return a [bool], but rather a type that looks
@@ -215,7 +219,9 @@ Proof. reflexivity. Qed.
 
 Lemma t_apply_empty:  forall (A:Type) (x: string) (v: A), { --> v } x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+   intros A x v.
+   unfold t_empty. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_eq)  *)
@@ -226,7 +232,10 @@ Proof.
 Lemma t_update_eq : forall A (m: total_map A) x v,
   (m & {x --> v}) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros A m x v.
+  unfold t_update.
+  rewrite <- beq_string_refl. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_neq)  *)
@@ -239,7 +248,10 @@ Theorem t_update_neq : forall (X:Type) v x1 x2
   x1 <> x2 ->
   (m & {x1 --> v}) x2 = m x2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X v x1 x2 m H.
+  unfold t_update.   Search (beq_string). 
+  apply false_beq_string in H. rewrite H. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_shadow)  *)
@@ -252,7 +264,13 @@ Proof.
 Lemma t_update_shadow : forall A (m: total_map A) v1 v2 x,
     m & {x --> v1 ; x --> v2} = m & {x --> v2}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros A m v1 v2 x.
+  apply functional_extensionality.
+  unfold t_update. 
+  intros x'.
+  destruct (beq_string x x').
+  - reflexivity. - reflexivity.
+Qed. 
 (** [] *)
 
 (** For the final two lemmas about total maps, it's convenient to use
@@ -266,7 +284,11 @@ Proof.
 
 Lemma beq_stringP : forall x y, reflect (x = y) (beq_string x y).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros x y.
+  destruct (beq_string x y) eqn:H1.
+  -  apply ReflectT. Search (beq_string). apply beq_string_true_iff. apply H1.
+  - apply ReflectF. apply beq_string_false_iff. apply H1.
+Qed. 
 (** [] *)
 
 (** Now, given [string]s [x1] and [x2], we can use the [destruct (beq_stringP
@@ -283,8 +305,13 @@ Proof.
 Theorem t_update_same : forall X x (m : total_map X),
     m & { x --> m x } = m.
   Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+   intros X x m.
+   apply functional_extensionality. 
+  unfold t_update. intros.
+  destruct (beq_stringP x x0).
+  - rewrite e. reflexivity.
+  - reflexivity.
+Qed.
 
 (** **** Exercise: 3 stars, recommended (t_update_permute)  *)
 (** Use [beq_stringP] to prove one final property of the [update]
@@ -297,7 +324,16 @@ Theorem t_update_permute : forall (X:Type) v1 v2 x1 x2
   m & { x2 --> v2 ; x1 --> v1 }
   =  m & { x1 --> v1 ; x2 --> v2 }.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X v1 v2 x1 x2 m H.
+  apply functional_extensionality.
+  intros x.
+  unfold t_update.
+  destruct (beq_stringP x1 x).
+  - destruct (beq_stringP x2 x).
+      + rewrite <- e0 in e. unfold not in H. symmetry in e. apply H in e. inversion e.
+      + reflexivity.
+ - reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
