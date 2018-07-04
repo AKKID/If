@@ -795,7 +795,8 @@ Proof.
       induction m as [|m' IHm'].
       + induction n as [|n' IHn'].
           * intros. simpl in H. rewrite <- H. apply c1.
-          * intros. rewrite <- plus_n_Sm in H. simpl in H. rewrite <- H. apply c3. apply IHn'. reflexivity.
+          * intros. rewrite <- plus_n_Sm in H. simpl in H.
+              rewrite <- H. apply c3. apply IHn'. reflexivity.
       + induction n as [|n' IHn'].
           * intros. Search (_ + 0). rewrite plus_n_O in H. rewrite <- H.
               apply c2. apply IHm'. rewrite plus_n_O. reflexivity.
@@ -1549,7 +1550,7 @@ Proof.
   - simpl. intros. Search ((S _ )  <= _).  induction c as [|c' IHc'].
       + simpl in H. apply Le.le_Sn_le in H. Check le_trans. apply (le_trans b (a' + b) d) in H.
          * right. apply H. * Search (_ <= _ + _). rewrite plus_comm. apply le_plus_l.
-      + simpl in H.  Search ((S _) <= (S _)). apply Sn_le_Sm__n_le_m in H. apply (IHa' b c' d) in H. destruct H as [Hl | Hr].
+      + simpl in H.  apply Sn_le_Sm__n_le_m in H. apply (IHa' b c' d) in H. destruct H as [Hl | Hr].
           * left. Search ((S _) <= (S _)). apply n_le_m__Sn_le_Sm. apply Hl.
           * right. apply Hr.
 Qed.
@@ -1589,12 +1590,15 @@ Proof.
     simpl. omega.
   - simpl. omega. 
   - intros. simpl in H.  
-     Search (length(_ ++ _)). rewrite app_length in H. apply (a_b_c_d (pumping_constant re1) (pumping_constant re2) (length s1) (length s2)) in H.
+     Search (length(_ ++ _)). rewrite app_length in H. 
+     apply (a_b_c_d (pumping_constant re1) (pumping_constant re2) (length s1) (length s2)) in H.
      destruct H as [Hl | Hr].
      + apply IH1 in Hl. destruct Hl as [s2' [s3' [s4' E]]].  exists s2'.  exists s3'. exists  (s4' ++ s2). destruct E as [H1 [H2 H3]]. split. 
        * rewrite app_assoc. rewrite (app_assoc T (s2' ++ s3') (s4') (s2)). Check app_assoc. rewrite <- (app_assoc T (s2') (s3') s4').  rewrite H1. reflexivity.  
-       * split. { apply H2. } { intros m. rewrite  app_assoc. rewrite (app_assoc T (s2' ++ napp m s3') s4' s2). apply (MApp ((s2' ++ napp m s3') ++ s4') _ (s2)).
-           { rewrite <- app_assoc. apply H3. } { apply Hmatch2. }}
+       * split. 
+            { apply H2. } 
+            { intros m. rewrite  app_assoc. rewrite (app_assoc T (s2' ++ napp m s3') s4' s2). apply (MApp ((s2' ++ napp m s3') ++ s4') _ (s2)).
+            { rewrite <- app_assoc. apply H3. } { apply Hmatch2. }}
      + apply IH2 in Hr. destruct Hr as [s1' [s3' [s4' E]]].  exists (s1 ++s1').  exists s3'. exists  s4'. destruct E as [H1 [H2 H3]]. split.
        * rewrite <- app_assoc. rewrite H1. reflexivity.  
        * split. { apply H2. } { intros m. Search app. rewrite <- app_assoc. apply (MApp (s1) _ _).
@@ -1973,7 +1977,7 @@ Qed.
 
      forall l, l = rev l -> pal l.
 *)
-Theorem rev_eq_hl: forall X (x y :X) (l:list X) ,
+(*Theorem rev_eq_hl: forall X (x y :X) (l:list X) ,
     (x::l++[y]) = rev (x::l ++ [y]) -> x = y.
 Proof.
   intros X x y.
@@ -1981,16 +1985,79 @@ Proof.
   - simpl. intros. inversion H. reflexivity.
   -  simpl in *. intros. apply IHl'.  rewrite <- app_assoc in H. rewrite rev_app_distr in H. 
 Abort.
+*)
+
+Fixpoint head {X:Type} (l:list X): list X :=
+  match l with
+    | [] => []
+    | h :: tl => [h]
+  end.
+
+Fixpoint tail {X:Type} (l:list X):list X :=
+  match l with
+    | [] => []
+    | h::tl => tl
+  end.
+
+Definition liat {X:Type}(l:list X): list X := rev (tail (rev l)).
+Definition trim {X:Type}(l:list X): list X := tail (liat l).
+
+Compute liat [1;2;3].
+Example test_tail: liat [1;2;3] = [1;2].
+Proof.
+  reflexivity.
+Qed.
+
+Compute trim [1].
+
+Theorem liat_snoc: forall X (l:list X) x, liat (l ++ [x]) = l.
+Proof.
+  intros X.
+  induction l as [|n l' IHl'].
+  - intros. reflexivity.
+  - intros. simpl. unfold liat. simpl.  Search (rev). rewrite rev_app_distr.
+     simpl. rewrite rev_app_distr.  rewrite rev_involutive. simpl. reflexivity.
+Qed.
+
+Theorem tail_htt: forall X (l:list X) v1 v2, tail (l ++ [v1] ++ [v2]) = tail (l ++ [v1]) ++ [v2].
+Proof.
+  intros X.
+  induction l as [|n l' IHl'].
+  - intros. reflexivity.
+  - intros. simpl. rewrite <- app_assoc.  simpl. reflexivity.
+Qed.
+
+Theorem liat_htt: forall X v1 v2 (l:list X), liat (v1::v2::l) = v1:: liat (v2::l).
+Proof.
+  intros X v1 v2.
+  induction l as [|n'  l' IHl'].
+  - unfold liat. simpl. reflexivity.
+  - unfold liat in IHl'.  unfold liat. simpl in *. 
+     rewrite <- app_assoc.
+  rewrite tail_htt. rewrite rev_app_distr. simpl. reflexivity.
+Qed.
 
 
+Lemma lemma : forall X (h h':X) t, 
+   h::h'::t = rev (h::h'::t) -> h::h'::t = [h] ++ (trim (h::h'::t)) ++ [h].
+Proof.
+  intros.
+  unfold trim.
+  unfold liat.  rewrite <- H.
+  simpl. rewrite <- tail_htt. simpl in H. rewrite <- app_assoc in H.
+  rewrite <- H.  simpl. reflexivity.
+Qed.
 
 Theorem palindrome_converse: forall X (l:list X), l = rev l -> pal l.
 Proof.
   intros X.
   induction l as [|n' l' IHl'].
   - intros. apply p1.
-  - intros.  
-
+  - intros.  destruct l'.
+     + apply p2.
+     + apply lemma in H. rewrite H. apply p3.
+Abort.
+https://gist.github.com/fluiddynamics/e2f907af569b84ae2042
 (* FILL IN HERE *)
 (** [] *)
 
@@ -2009,7 +2076,11 @@ Proof.
     l1 l2], which should be provable exactly when [l1] and [l2] are
     lists (with elements of type X) that have no elements in
     common. *)
-
+Inductive disjoint {X:Type} : list X -> list X -> Prop :=
+  | d1: disjoint [] []
+  | d2: forall l, disjoint [] l
+  | d3: forall l1 l2 x, ~In x l1 -> disjoint l1 l2 -> disjoint l1 (x::l2)
+  | d4: forall l1 l2, disjoint l1 l2 -> disjoint l2 l1. 
 (* FILL IN HERE *)
 
 (** Next, use [In] to define an inductive proposition [NoDup X
@@ -2018,6 +2089,10 @@ Proof.
     other.  For example, [NoDup nat [1;2;3;4]] and [NoDup
     bool []] should be provable, while [NoDup nat [1;2;1]] and
     [NoDup bool [true;true]] should not be.  *)
+Inductive NoDup {X:Type} : list X -> Prop :=
+  | n1: NoDup []
+  | n2: forall x, NoDup [x]
+  | n3: forall x l, ~In x l -> NoDup l -> NoDup (x::l).
 
 (* FILL IN HERE *)
 
@@ -2040,14 +2115,31 @@ Lemma in_split : forall (X:Type) (x:X) (l:list X),
   In x l ->
   exists l1 l2, l = l1 ++ x :: l2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x l. induction l as [|n l' IHl'].
+  - simpl. intros. inversion H.
+  - intros. simpl in *. destruct H as [H|H].
+      + exists []. exists l'. rewrite H. simpl. reflexivity.
+      + apply IHl' in H. destruct H as [l1  [l2 E]].
+          exists (n::l1). exists l2. rewrite E. simpl. reflexivity.
+Qed. 
 
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
 Inductive repeats {X:Type} : list X -> Prop :=
-  (* FILL IN HERE *)
-.
+  |r1: forall x, repeats [x;x]
+  |r2: forall x l, repeats l -> repeats (x::l)
+  |r3: forall x l, In x l -> repeats (x::l).
+
+Example test_repeats1: repeats [1;2;1;1].
+Proof.
+  apply r3. simpl. right. left. reflexivity.
+Qed.
+
+Example test_repeats2: repeats [2;1;1].
+Proof.
+  apply r2. apply r3. simpl. left. reflexivity.
+Qed.
 
 (** Now, here's a way to formalize the pigeonhole principle.  Suppose
     list [l2] represents a list of pigeonhole labels, and list [l1]
@@ -2069,8 +2161,24 @@ Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
    repeats l1.
 Proof.
    intros X l1. induction l1 as [|x l1' IHl1'].
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+   - intros l2 em H H1. simpl in H1. destruct l2.
+      + inversion H1. + inversion H1.
+    - intros l2 em H H1. unfold excluded_middle in em.
+(*        destruct (em (In x l1')) as [Hl | Hr]. 
+        + apply r3. apply Hl.
+        + apply r2.*)
+induction l2 as [|x' l2' IHl2'].
+       + destruct (H x). simpl. left. reflexivity.
+       + destruct (em (In x l1')) as [Hl | Hr].
+          * apply r3. apply Hl.
+          * destruct (em (In x' l2')) as [Hl' | Hr'].
+              { apply r2. apply (IHl1' l2'). { unfold excluded_middle; apply em. }
+              { intros. simpl in H. destruct (H x0).
+              { right. apply H0. }  { rewrite H2 in Hl'. apply Hl'. }
+              { apply H2. } } { simpl in H1. unfold lt.  unfold lt in H1. Search (S _ <= S _).
+            apply Sn_le_Sm__n_le_m. apply H1. }}
+            { apply r2.
+  Abort.
 
 
 (* ================================================================= *)
@@ -2215,7 +2323,9 @@ Lemma app_ne : forall (a : ascii) s re0 re1,
     ([ ] =~ re0 /\ a :: s =~ re1) \/
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re0 /\ s1 =~ re1.
 Proof.
-  (* FILL IN HERE *) Admitted.
+   intros. split.
+    - intros. inversion H. 
+Abort.
 (** [] *)
 
 (** [s] matches [Union re0 re1] iff [s] matches [re0] or [s] matches [re1]. *)
