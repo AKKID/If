@@ -2048,6 +2048,19 @@ Proof.
   rewrite <- H.  simpl. reflexivity.
 Qed.
 
+Theorem tail_rev : forall X (l:list X), tail (rev l) = rev (liat l).
+Proof.
+  intros. unfold liat. Search rev. rewrite rev_involutive. reflexivity.
+Qed.
+Theorem liat_rev : forall X (l:list X), liat (rev l) = rev (tail l).
+Proof.
+ intros.
+ destruct l.
+  + reflexivity.
+ + simpl. rewrite liat_snoc. reflexivity.
+Qed.
+
+
 Theorem palindrome_converse: forall X (l:list X), l = rev l -> pal l.
 Proof.
   intros X.
@@ -2055,9 +2068,10 @@ Proof.
   - intros. apply p1.
   - intros.  destruct l'.
      + apply p2.
-     + apply lemma in H. rewrite H. apply p3.
+     + apply lemma in H. rewrite H. apply p3.   unfold trim.  unfold liat. rewrite (tail_rev ). rewrite tail_rev.
+
 Abort.
-https://gist.github.com/fluiddynamics/e2f907af569b84ae2042
+
 (* FILL IN HERE *)
 (** [] *)
 
@@ -2126,20 +2140,7 @@ Qed.
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
-Inductive repeats {X:Type} : list X -> Prop :=
-  |r1: forall x, repeats [x;x]
-  |r2: forall x l, repeats l -> repeats (x::l)
-  |r3: forall x l, In x l -> repeats (x::l).
 
-Example test_repeats1: repeats [1;2;1;1].
-Proof.
-  apply r3. simpl. right. left. reflexivity.
-Qed.
-
-Example test_repeats2: repeats [2;1;1].
-Proof.
-  apply r2. apply r3. simpl. left. reflexivity.
-Qed.
 
 (** Now, here's a way to formalize the pigeonhole principle.  Suppose
     list [l2] represents a list of pigeonhole labels, and list [l1]
@@ -2154,31 +2155,99 @@ Qed.
     manage to do this, you will not need the [excluded_middle]
     hypothesis. *)
 
+Lemma In_x_x'_l: forall X x x' (l: list X), 
+    x <> x' -> In x (x'::l) -> In x l.
+Proof.
+  intros X x x'. intros. simpl in H0.
+  destruct H0 as [Hl | Hr]. 
+  - unfold not in H. symmetry in Hl. apply H in Hl. inversion Hl.
+  - apply Hr.
+Qed.
+
+Inductive appears_in {X:Type} (a:X) : list X -> Prop :=
+  | ai_here : forall l, appears_in a (a::l)
+  | ai_later : forall b l, appears_in a l -> appears_in a (b::l).
+
+Lemma appears_in_app : forall {X:Type} (xs ys : list X) (x:X),
+     appears_in x (xs ++ ys) -> appears_in x xs \/ appears_in x ys.
+Proof.
+    intros X xs.
+    induction xs as [|n xs' IHxs'].
+    - simpl. intros. right. apply H.
+    - intros. inversion H. + left. apply ai_here. + 
+       apply (IHxs' ys x) in H1.  destruct H1.
+       * left. apply ai_later. apply H1. * right. apply H1.
+Qed.
+
+
+Lemma app_appears_in : forall {X:Type} (xs ys : list X) (x:X),
+     appears_in x xs \/ appears_in x ys -> appears_in x (xs ++ ys).
+Proof.
+    intros X xs. induction xs as [|n xs' IHxs'].
+    - intros. simpl. destruct H. + inversion H. + apply H.
+    - intros. simpl. destruct H as [Hl | Hr].
+       + inversion Hl. * apply ai_here. *  apply ai_later. apply IHxs'. left. apply H0.
+       + apply ai_later. apply IHxs'. right. apply Hr.
+Qed.
+
+Lemma appears_in_app_split : forall {X:Type} (x:X) (l:list X),
+  appears_in x l ->
+  exists l1, exists l2, l = l1 ++ (x::l2).
+Proof.
+  intros X x. induction l as [|n l' IHl'].
+  - intros. inversion H.
+  - intros. inversion H. 
+      + exists []. exists l'. reflexivity.
+      + apply IHl' in H1. destruct H1 as [l1' [l2' E]].
+          exists (n::l1'). exists l2'. rewrite E. simpl. reflexivity.
+Qed.
+Lemma ai_comm : forall{X:Type} (l1 l2:list X) (x:X),
+appears_in x(l1++l2)->appears_in x(l2++l1).
+Proof.
+  intros. apply app_appears_in. apply or_commut. 
+  apply appears_in_app in H. apply H.
+Qed.
+
+Inductive repeats {X:Type} : list X -> Prop :=
+  (*|r1: forall x, repeats [x;x]*)
+  |r2: forall x l, repeats l -> repeats (x::l)
+  |r3: forall x l, appears_in x l -> repeats (x::l).
+
+Example test_repeats1: repeats [1;2;1;1].
+Proof.
+  apply r2. apply r2. apply r3. apply ai_here.
+Qed.
+
+Theorem ai_later': forall {X:Type} (l:list X) (x x0:X),
+  x<>x0 -> appears_in x0 (x::l) -> appears_in x0 l.
+Proof. 
+  intros. inversion H0.
+  - unfold not in H. symmetry in H2. apply H in H2. inversion H2.
+  - apply H2.
+Qed.
+
 Theorem pigeonhole_principle: forall (X:Type) (l1  l2:list X),
    excluded_middle ->
-   (forall x, In x l1 -> In x l2) ->
+   (forall x, appears_in x l1 -> appears_in x l2) ->
    length l2 < length l1 ->
-   repeats l1.
+   repeats l1. 
 Proof.
-   intros X l1. induction l1 as [|x l1' IHl1'].
-   - intros l2 em H H1. simpl in H1. destruct l2.
-      + inversion H1. + inversion H1.
-    - intros l2 em H H1. unfold excluded_middle in em.
-(*        destruct (em (In x l1')) as [Hl | Hr]. 
-        + apply r3. apply Hl.
-        + apply r2.*)
-induction l2 as [|x' l2' IHl2'].
-       + destruct (H x). simpl. left. reflexivity.
-       + destruct (em (In x l1')) as [Hl | Hr].
-          * apply r3. apply Hl.
-          * destruct (em (In x' l2')) as [Hl' | Hr'].
-              { apply r2. apply (IHl1' l2'). { unfold excluded_middle; apply em. }
-              { intros. simpl in H. destruct (H x0).
-              { right. apply H0. }  { rewrite H2 in Hl'. apply Hl'. }
-              { apply H2. } } { simpl in H1. unfold lt.  unfold lt in H1. Search (S _ <= S _).
-            apply Sn_le_Sm__n_le_m. apply H1. }}
-            { apply r2.
-  Abort.
+   intros X l1 l2 EM. generalize dependent l2. induction l1.
+  - intros. inversion H0. 
+  - destruct (EM(appears_in x l1)).
+     + intros.  apply r3. apply H.
+     + intros. apply r2. destruct (appears_in_app_split x l2).
+         * apply H0. apply ai_here.
+         * destruct H2. apply IHl1 with (x0 ++ x1).
+            { intros. assert(H': appears_in x2 l2).
+               { apply H0. apply ai_later. apply H3. }
+                { rewrite H2 in H'. apply ai_comm in H'.  simpl in H'. apply ai_later' in H'.
+                  { apply ai_comm. apply H'. } { intro. apply H. rewrite   H4. apply H3. } } }
+            { rewrite H2 in H1. rewrite app_length. rewrite app_length in H1. simpl in H1.
+              rewrite <- plus_n_Sm in H1. Search (S _ <= S _). apply Sn_le_Sm__n_le_m. unfold lt in H1.
+              apply H1. }
+Qed.
+
 
 
 (* ================================================================= *)
@@ -2210,6 +2279,7 @@ induction l2 as [|x' l2' IHl2'].
 Require Export Coq.Strings.Ascii.
 
 Definition string := list ascii.
+Print ascii.
 
 (** The Coq standard library contains a distinct inductive definition
     of strings of ASCII characters. However, we will use the above
@@ -2323,10 +2393,17 @@ Lemma app_ne : forall (a : ascii) s re0 re1,
     ([ ] =~ re0 /\ a :: s =~ re1) \/
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re0 /\ s1 =~ re1.
 Proof.
-   intros. split.
-    - intros. inversion H. 
-Abort.
-(** [] *)
+  intros. split.
+  - intros. inversion H. destruct s1.
+     + left. split. apply H3. simpl. apply H4.
+     + simpl in H0. inversion H0. right. exists s1,s2. split. reflexivity. 
+        split. rewrite <- H6. apply H3. apply H4.
+  - intros. destruct H as [Hl | Hr].
+     + destruct Hl as [Hll  Hlr]. Check app_nil_r. assert(H: [] ++ a::s = a::s).
+        reflexivity. rewrite <- H. apply MApp. apply Hll. apply Hlr.
+     + destruct Hr as [s0 [s1 [Hrl [Hrm Hrr]]]]. rewrite Hrl.
+         apply (MApp (a::s0)_ s1). * apply Hrm. * apply Hrr.
+Qed.
 
 (** [s] matches [Union re0 re1] iff [s] matches [re0] or [s] matches [re1]. *)
 Lemma union_disj : forall (s : string) re0 re1,
@@ -2360,7 +2437,17 @@ Lemma star_ne : forall (a : ascii) s re,
     a :: s =~ Star re <->
     exists s0 s1, s = s0 ++ s1 /\ a :: s0 =~ re /\ s1 =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split. 
+  - intros. remember (a::s) as s'. remember (Star re) as re'. (*generalize dependent re.*)  induction H.
+     + inversion Heqre'.  + inversion Heqre'.    + inversion Heqre'.
+     + inversion Heqre'.  + inversion Heqre'.  + inversion Heqs'.
+     + destruct s1. * simpl in Heqs'. apply IHexp_match2 in Heqs'.  { apply Heqs'. } { apply Heqre'. }
+        * inversion Heqs'. inversion Heqre'. exists s1, s2. split. { reflexivity. } { split. { rewrite <- H4. rewrite <- H2. apply H. }
+           { rewrite <- H4. apply H0. } } 
+  - intros. destruct H as [s0 [s1 [Hl [Hm Hr]]]].
+     rewrite Hl. apply (MStarApp (a::s0)). + apply Hm. + apply Hr.
+Qed.
+
 (** [] *)
 
 (** The definition of our regex matcher will include two fixpoint
@@ -2369,21 +2456,52 @@ Proof.
     function will satisfy the following property: *)
 Definition refl_matches_eps m :=
   forall re : @reg_exp ascii, reflect ([ ] =~ re) (m re).
-
+Print reflect.
+Check refl_matches_eps.
 (** **** Exercise: 2 stars, optional (match_eps)  *)
 (** Complete the definition of [match_eps] so that it tests if a given
     regex matches the empty string: *)
-Fixpoint match_eps (re: @reg_exp ascii) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint match_eps (re: @reg_exp ascii) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char _ => false
+  | Star _ => true 
+  | App re1 re2 => (match_eps re1) && (match_eps re2)
+  | Union re1 re2 => (match_eps re1) || (match_eps re2)
+  end.
 (** [] *)
 
 (** **** Exercise: 3 stars, optional (match_eps_refl)  *)
 (** Now, prove that [match_eps] indeed tests if a given regex matches
     the empty string.  (Hint: You'll want to use the reflection lemmas
     [ReflectT] and [ReflectF].) *)
+Theorem plus_nil_r: forall X (s0 s1:list X), s0 ++ s1 = [] -> s1 = [].
+Proof.
+  intros. induction s0.
+  - simpl in H. apply H.
+  - simpl in H. inversion H.
+Qed.
 Lemma match_eps_refl : refl_matches_eps match_eps.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros re. Search reflect. induction re.
+  - simpl. apply ReflectF. intro. inversion H.
+  - simpl. apply ReflectT. apply MEmpty.
+  - simpl. apply ReflectF. intro. inversion H.
+  - simpl. destruct (match_eps re1). + destruct (match_eps re2).
+     * simpl. inversion IHre1. inversion IHre2. apply ReflectT. rewrite <- (app_nil_r ascii []). apply MApp. apply H. apply H0.
+    * simpl. inversion IHre1. inversion IHre2. apply ReflectF. intro. inversion H1.  apply plus_nil_r in H2. rewrite H2 in H6. apply H0. apply H6.
+    + simpl. destruct (match_eps re2).
+        * inversion IHre1. inversion IHre2. apply ReflectF. intro. inversion H1. apply plus_nil_l in H2. apply H. rewrite <- H2. apply H5.
+        * apply ReflectF. inversion IHre1. inversion IHre2. intro. inversion H1. apply plus_nil_l in H2. apply H. rewrite <- H2. apply H5.
+  - simpl. destruct (match_eps re2). + rewrite a_or_b. Search (_ || _).  rewrite true_or_l. apply ReflectT.
+     inversion IHre2. rewrite <- (app_nil_r ascii []). apply MUnionR. simpl. apply H.
+     + destruct (match_eps re1). 
+        * simpl. apply ReflectT. inversion IHre1. rewrite <- (app_nil_r ascii []). apply MUnionL. simpl. apply H.
+        * simpl. inversion IHre1. inversion IHre2. apply ReflectF. intro. inversion H1.
+            { apply H. apply H4. } { apply H0. apply H4. }
+  - simpl. apply ReflectT. apply MStar0.
+Qed.
 (** [] *)
 
 (** We'll define other functions that use [match_eps]. However, the
@@ -2405,13 +2523,33 @@ Definition is_der re (a : ascii) re' :=
     [re], it evaluates to the derivative of [re] on [a]. I.e., [d]
     satisfies the following property: *)
 Definition derives d := forall a re, is_der re a (d a re).
-
+Check derives.
 (** **** Exercise: 3 stars, optional (derive)  *)
 (** Define [derive] so that it derives strings. One natural
     implementation uses [match_eps] in some cases to determine if key
     regex's match the empty string. *)
-Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+
+Search ascii.
+
+Definition eqb (m n:nat) :bool := leb m n && leb n m.
+Compute eqb 1 1.
+
+Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii :=
+  match re with
+    | EmptySet => EmptySet
+    | EmptyStr => EmptyStr
+    | Char b => if eqb (nat_of_ascii a) (nat_of_ascii b) then EmptyStr else EmptySet
+    | App re1 re2 => match match_eps re1 with
+                               | true => derive a re2
+                               | false => App (derive a re1) re2
+                            end
+    | Union re1 re2 => match match_eps re1 with
+                               | true => derive a re2
+                               | false => Union (derive a re1) re2
+                             end
+   | Star re1 => derive a re1
+  end.
+
 (** [] *)
 
 (** The [derive] function should pass the following tests. Each test
@@ -2421,48 +2559,59 @@ Fixpoint derive (a : ascii) (re : @reg_exp ascii) : @reg_exp ascii
     match fact that it reflects. *)
 Example c := ascii_of_nat 99.
 Example d := ascii_of_nat 100.
+Compute (nat_of_ascii c).
+Search nat_of_ascii.
+Check nat_of_ascii.
 
 (** "c" =~ EmptySet: *)
 Example test_der0 : match_eps (derive c (EmptySet)) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "c" =~ Char c: *)
 Example test_der1 : match_eps (derive c (Char c)) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "c" =~ Char d: *)
 Example test_der2 : match_eps (derive c (Char d)) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "c" =~ App (Char c) EmptyStr: *)
 Example test_der3 : match_eps (derive c (App (Char c) EmptyStr)) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "c" =~ App EmptyStr (Char c): *)
 Example test_der4 : match_eps (derive c (App EmptyStr (Char c))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "c" =~ Star c: *)
 Example test_der5 : match_eps (derive c (Star (Char c))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "cd" =~ App (Char c) (Char d): *)
 Example test_der6 :
   match_eps (derive d (derive c (App (Char c) (Char d)))) = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** "cd" =~ App (Char d) (Char c): *)
 Example test_der7 :
   match_eps (derive d (derive c (App (Char d) (Char c)))) = false.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  reflexivity.
+Qed.
 
 (** **** Exercise: 4 stars, optional (derive_corr)  *)
 (** Prove that [derive] in fact always derives strings.
@@ -2486,6 +2635,7 @@ Proof.
     [Prop]'s naturally using [intro] and [destruct]. *)
 Lemma derive_corr : derives derive.
 Proof.
+
   (* FILL IN HERE *) Admitted.
 (** [] *)
 
