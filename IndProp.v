@@ -582,11 +582,11 @@ Inductive next_even : nat -> nat -> Prop :=
     between every pair of natural numbers. *)
 
 Inductive total_relation: nat -> nat -> Prop :=
-  | tr1: forall n, total_relation n n
-  | tr2: forall n1 n2, total_relation n1 n2 -> total_relation n2 n1
+  | tr1_L: forall n0 n1, total_relation n0 n1
+  | tr1_R: forall n0 n1, total_relation n1 n0
+  | tr2: forall n0, total_relation n0 n0
   | tr3: forall n1 n2 n3, total_relation n1 n2 ->
                      total_relation n2 n3 -> total_relation n1 n3.
-(* FILL IN HERE *)
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (empty_relation)  *)
