@@ -1,7 +1,9 @@
 (** * ProofObjects: The Curry-Howard Correspondence *)
 
+
 Set Warnings "-notation-overridden,-parsing".
 Require Export IndProp.
+Check evenb.
 
 (** "_Algorithms are the computational content of proofs_."  --Robert Harper *)
 
@@ -175,10 +177,12 @@ Print ev_4'''.
 
 Theorem ev_8 : ev 8.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply (ev_SS  6  (ev_SS 4 ev_4)).
+Qed.
 
-Definition ev_8' : ev 8 
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+
+Definition ev_8' : ev 8 := ev_SS 6 (ev_SS 4 ev_4).
+
 (** [] *)
 
 (* ################################################################# *)
@@ -371,6 +375,7 @@ Definition and_comm'_aux P Q (H : P /\ Q) :=
   match H with
   | conj HP HQ => conj HQ HP
   end.
+Check and_comm'_aux.
 
 Definition and_comm' P Q : P /\ Q <-> Q /\ P :=
   conj (and_comm'_aux P Q) (and_comm'_aux Q P).
@@ -378,8 +383,13 @@ Definition and_comm' P Q : P /\ Q <-> Q /\ P :=
 (** **** Exercise: 2 stars, optional (conj_fact)  *)
 (** Construct a proof object demonstrating the following proposition. *)
 
-Definition conj_fact : forall P Q R, P /\ Q -> Q /\ R -> P /\ R 
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition conj_fact : forall P Q R, P /\ Q -> Q /\ R -> P /\ R:=
+  fun(P Q R:Prop) => fun (HPQ: P /\ Q) => fun(HQR: Q/\R) => match HPQ with
+        | conj HP HQ => match HQR with
+                                  | conj _ HR => conj HP HR
+                                 end
+        end.
+Check conj_fact.
 (** [] *)
 
 
@@ -408,8 +418,17 @@ End Or.
 (** Try to write down an explicit proof object for [or_commut] (without
     using [Print] to peek at the ones we already defined!). *)
 
-Definition or_comm : forall P Q, P \/ Q -> Q \/ P 
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+
+
+Definition or_comm : forall P Q, P \/ Q -> Q \/ P :=
+  fun(P Q:Prop) => fun(Hpq:P \/ Q) => 
+      match Hpq with
+      | or_introl HP => or_intror HP
+      | or_intror HQ => or_introl HQ
+      end.
+
+Check or_comm.
+Print or_commut.
 (** [] *)
 
 (** ** Existential Quantification
@@ -438,17 +457,23 @@ End Ex.
 Check ex (fun n => ev n).
 (* ===> exists n : nat, ev n
         : Prop *)
+Print ev.
+Check ((ev_SS 2 (ev_SS 0 ev_0)) ).
 
 (** Here's how to define an explicit proof object involving [ex]: *)
-
+Check ev.
+(* ev is a parameter from outside*)
 Definition some_nat_is_even : exists n, ev n :=
   ex_intro ev 4 (ev_SS 2 (ev_SS 0 ev_0)).
 
 (** **** Exercise: 2 stars, optional (ex_ev_Sn)  *)
 (** Complete the definition of the following proof object: *)
+Check (ex (fun n => ev (S n))).
 
-Definition ex_ev_Sn : ex (fun n => ev (S n)) 
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition ex_ev_Sn : ex (fun n => ev (S n)) :=
+  ex_intro (fun n => ev (S n)) 3 (ev_SS 2 (ev_SS 0 ev_0)).
+
+
 (** [] *)
 
 (* ================================================================= *)
@@ -539,18 +564,25 @@ End MyEquality.
 Lemma equality__leibniz_equality : forall (X : Type) (x y: X),
   x = y -> forall P:X->Prop, P x -> P y.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros X x y H P Px.
+  rewrite <- H.
+  apply Px.
+Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, optional (leibniz_equality__equality)  *)
 (** Show that, in fact, the inductive definition of equality is
     _equivalent_ to Leibniz equality: *)
+Print excluded_middle.
+
 
 Lemma leibniz_equality__equality : forall (X : Type) (x y: X),
   (forall P:X->Prop, P x -> P y) -> x = y.
 Proof.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  intros X x y H.
+  Print excluded_middle.
+Abort.
+
 
 (* ================================================================= *)
 (** ** Inversion, Again *)
