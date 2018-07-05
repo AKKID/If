@@ -580,8 +580,9 @@ Lemma leibniz_equality__equality : forall (X : Type) (x y: X),
   (forall P:X->Prop, P x -> P y) -> x = y.
 Proof.
   intros X x y H.
-  Print excluded_middle.
-Abort.
+  apply H.
+  reflexivity.
+Qed.
 
 
 (* ================================================================= *)
