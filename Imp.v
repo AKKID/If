@@ -441,14 +441,25 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BAnd b1 b2 => BAnd (optimize_0plus_b b1) (optimize_0plus_b b2)
+  | BNot b1 => BNot (optimize_0plus_b b1)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros b. induction b;try reflexivity;
+  repeat (try (simpl;rewrite optimize_0plus_sound); try reflexivity). 
+  - simpl. rewrite IHb. reflexivity.
+  - simpl. rewrite IHb1. rewrite IHb2. reflexivity.
+Qed.
+(** [] *) 
 
 (** **** Exercise: 4 stars, optional (optimizer)  *)
 (** _Design exercise_: The optimization implemented by our
@@ -461,6 +472,43 @@ Proof.
 
 (* FILL IN HERE *)
 *)
+Print optimize_0plus.
+  Fixpoint optimizer (a:aexp) : aexp :=
+    match a with
+      | ANum n => ANum n
+      | APlus (ANum 0) e2 => optimizer e2
+      (*| APlus e1 (ANum 0) => optimizer e1*)
+      | APlus e1 e2 => APlus (optimizer e1) (optimizer e2)
+      | AMinus e1 (ANum 0) => optimizer e1
+      | AMinus e1 e2 => AMinus (optimizer e1) (optimizer e2)
+      | AMult (ANum 0) e2 => ANum 0
+      (*| AMult e1 (ANum 0) => ANum 0*)
+      | AMult e1 e2 => AMult (optimizer e1) (optimizer e2)
+    end.
+
+Theorem optimizer_sound: forall a:aexp,
+    aeval (optimizer a) = aeval a.
+Proof.
+  intros a.
+  induction a;try reflexivity.
+  destruct a1. 
+  -  simpl. destruct n; repeat try (simpl;rewrite IHa2;reflexivity).
+  - repeat  (try simpl in IHa1; simpl; rewrite IHa1; rewrite IHa2; reflexivity).
+  -  try simpl in IHa1; simpl; rewrite IHa1; rewrite IHa2; reflexivity.
+  - try simpl in IHa1; simpl; rewrite IHa1; rewrite IHa2; reflexivity.
+  - destruct a2. * destruct n; repeat try( simpl;rewrite IHa1; rewrite <- minus_n_O;reflexivity). simpl. rewrite IHa1. reflexivity.
+     * simpl in IHa2. simpl. rewrite IHa2. rewrite IHa1. reflexivity.
+    * simpl in IHa2; simpl; rewrite IHa2;rewrite IHa1;reflexivity.
+    * simpl in IHa2; simpl; rewrite IHa2;rewrite IHa1;reflexivity.
+  - destruct a1.  * destruct n.  + simpl. reflexivity. + simpl in *. rewrite IHa2. reflexivity.
+     * simpl in *. rewrite IHa1. rewrite IHa2. reflexivity.
+      * simpl in *; rewrite IHa1; rewrite IHa2;reflexivity.
+      * simpl in *; rewrite IHa1; rewrite IHa2;reflexivity.
+Qed.
+    
+
+  
+
 (** [] *)
 
 (* ================================================================= *)
