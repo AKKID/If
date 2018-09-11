@@ -456,6 +456,8 @@ Inductive nat : Type :=
 Inductive nat' : Type :=
   | stop : nat'
   | tick : nat' -> nat'.
+  
+Compute  tick stop.
 
 (** The _interpretation_ of these marks comes from how we use them to
     compute. *)
@@ -484,6 +486,12 @@ End NatPlayground.
 
 Check (S (S (S (S O)))).
   (* ===> 4 : nat *)
+Definition minustwo' (n:nat) : nat :=
+  match n with
+    |O => O
+    | S O => O
+    | S (S n') => n'
+    end. 
 
 Definition minustwo (n : nat) : nat :=
   match n with
@@ -862,6 +870,7 @@ Proof.
 Theorem plus_id_exercise : forall n m o : nat,
   n = m -> m = o -> n + m = m + o.
 Proof.
+  
   intros n m o Hnm Hmo.
   rewrite Hnm. rewrite Hmo.
   reflexivity.
@@ -920,7 +929,11 @@ Theorem plus_1_neq_0_firsttry : forall n : nat,
   beq_nat (n + 1) 0 = false.
 Proof.
   intros n.
-  simpl.  (* does nothing! *)
+  destruct n.
+  - simpl. reflexivity.
+  - simpl. reflexivity.
+  
+
 Abort.
 
 (** The reason for this is that the definitions of both
@@ -1118,7 +1131,7 @@ Proof.
     destruct c.
     - reflexivity.
     - destruct b. 
-        +  inversion Hbc.
+        +  simpl in Hbc. apply Hbc.
         +  inversion Hbc.
 Qed.
 
