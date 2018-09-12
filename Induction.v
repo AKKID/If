@@ -72,7 +72,9 @@ Theorem plus_n_O_firsttry : forall n:nat,
 
 Proof.
   intros n.
-  simpl. (* Does nothing! *)
+  induction n as [|n'  IHn'].
+  - reflexivity.
+  - simpl. rewrite <- IHn'. reflexivity. (* Does nothing! *)
 Abort.
 
 (** And reasoning by cases using [destruct n] doesn't get us much
@@ -308,7 +310,9 @@ Proof.
   intros n m p q.
   (* We just need to swap (n + m) for (m + n)... seems
      like plus_comm should do the trick! *)
-  rewrite -> plus_comm.
+  assert(H: n + m = m + n).
+  - Search(_ + _ = _ + _). rewrite plus_comm. reflexivity.
+  - rewrite H. reflexivity.
   (* Doesn't work...Coq rewrote the wrong plus! *)
 Abort.
 
@@ -473,9 +477,10 @@ Theorem plus_swap : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
   intros n m p.
-  induction n as [|n' IHn'].
-  - reflexivity.
-  - simpl. rewrite <- plus_n_Sm.  rewrite IHn'. reflexivity.
+  rewrite -> plus_assoc.
+  assert(H: n + m = m + n).
+  - apply plus_comm.
+  - rewrite H. rewrite <- plus_assoc. reflexivity.
 Qed.
 
 (** Now prove commutativity of multiplication.  (You will probably
@@ -564,6 +569,17 @@ Qed.
 
 Theorem mult_plus_distr_r : forall n m p : nat,
   (n + m) * p = (n * p) + (m * p).
+(*Proof.
+  intros.
+  induction p as [|p' IHp'].
+  - Search(_ * O). rewrite mult_0_r. rewrite mult_0_r. rewrite mult_0_r. reflexivity.
+  - Search(_ * S _). rewrite <- mult_n_Sm. rewrite <- mult_n_Sm. rewrite <- mult_n_Sm. 
+      rewrite IHp'. assert(H: m * p' + (n + m) = n + (m * p' + m)). 
+      + rewrite plus_assoc. Check plus_comm. rewrite plus_comm with(n:=m*p')(m:=n). rewrite plus_assoc. reflexivity.
+      + rewrite <- plus_assoc. rewrite H. rewrite plus_assoc. reflexivity.
+Qed.*)
+
+
 Proof.
   intros n m p.
   induction p as [|p' IHp'].
@@ -581,7 +597,7 @@ Proof.
   intros n m p.
   induction n as [|n' IHn'].
   - reflexivity.
-  - simpl. Search ((_+_)*_).  rewrite mult_plus_distr_r. rewrite IHn'. reflexivity.
+  - simpl. Search ((_+_)*_). rewrite IHn'. rewrite <- mult_plus_distr_r. reflexivity. 
 Qed.
 (** [] *)
 
@@ -644,6 +660,7 @@ Qed.
     do so! *)
 Check bin.
 Print incr.
+Compute incr  (xI z).
 
 Theorem plus_1: forall n :nat, n + 1 = S n.
 Proof.
@@ -660,6 +677,7 @@ Fixpoint bin_to_nat (b:bin) :nat :=
     | xI b' => S((bin_to_nat b') + (bin_to_nat b'))
     | xO b' => (bin_to_nat b') + (bin_to_nat b')
    end.
+
 
 Theorem bin_geq_O: forall b:bin, 
     leb 0 (bin_to_nat  b) = true.

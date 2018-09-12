@@ -110,6 +110,7 @@ Proof.
 Qed.
 (** [] *)
 
+
 (** **** Exercise: 1 star, optional (fst_swap_is_snd)  *)
 Theorem fst_swap_is_snd : forall (p : natprod),
   fst (swap_pair p) = snd p.
@@ -402,6 +403,7 @@ Proof. reflexivity. Qed.
 
 Definition sum : bag -> bag -> bag := app.
 
+
 Example test_sum1:              count 1 (sum [1;2;3] [1;4;1]) = 3.
 Proof. reflexivity. Qed.
 (* GRADE_THEOREM 0.5: NatList.test_sum1 *)
@@ -420,6 +422,22 @@ Definition member (v:nat) (s:bag) : bool :=
     | O => false
     |  _ => true
   end.
+
+Fixpoint member' (v:nat)(s:bag) : bool :=
+  match s with
+    | nil => false
+    | h :: tl => if beq_nat h v then true else member' v tl
+  end.
+
+Theorem m_eq_m': forall (v:nat) (s:bag), member v s = member' v s.
+Proof.
+  intros v s.
+  induction s as [|n s' IHs'].
+  - reflexivity.
+  - simpl. unfold member. unfold count. destruct (beq_nat n v) eqn:H1.
+      + reflexivity.
+      + unfold member in IHs'. rewrite <- IHs'. reflexivity.
+Qed.
 
 Example test_member1:             member 1 [1;4;1] = true.
 Proof. reflexivity. Qed.
@@ -461,7 +479,7 @@ Fixpoint remove_all (v:nat) (s:bag) : bag :=
   match s with
   | [] => []
   | h :: tl => if beq_nat h v then (remove_all v tl) else h :: (remove_all v tl)
-  end.
+  end.  
 
 Example test_remove_all1:  count 5 (remove_all 5 [2;1;5;4;1]) = 0.
 Proof. reflexivity. Qed.
@@ -909,9 +927,7 @@ Proof.
    intros l.
    induction l as [|n l' IHl'].
    - reflexivity.
-   - simpl. destruct (beq_nat n n) eqn:H1.
-      + apply IHl'.
-      + inversion H1. Search beq_nat. apply beq_nat_refl.
+   - simpl. Search (beq_nat _ _). rewrite <- beq_nat_refl. apply IHl'.
 Qed.
 (** [] *)
 
@@ -969,6 +985,29 @@ Proof.
    Search rev. rewrite <- rev_involutive. rewrite <- H. rewrite rev_involutive.
    reflexivity.
 Qed.
+
+Theorem nil_neq_l: forall (n:nat) (l:natlist), [] = l ++ [n] -> False.
+Proof.
+  induction l as [|n' l' IHl'].
+  - intros. simpl in H. inversion H.
+  - simpl.  intros con. apply IHl'. inversion con.
+Qed.
+
+
+
+
+(*Theorem rev_injective': forall l1 l2:natlist, rev l1 = rev l2 -> l1 = l2.
+Proof.
+  intros l1.
+  induction l1 as [|n l1' IHl1'].
+  - induction l2 as [|n' l2' IHl2'].
+     + reflexivity.
+     + simpl. intros.  apply nil_neq_l in H. inversion H.
+  - induction l2 as [|n' l2' IHl2'].
+     + intros. inversion H. assert(H2: rev l1' ++ [n] = [ ] -> [] = rev l1' ++  [n] ).
+         { intros. rewrite H1. reflexivity. }
+         { apply H2 in H1. apply nil_neq_l in H1. inversion H1. }
+     + simpl. intros. Search(_ ++ _).*)
 
 Theorem rev_injective_l: forall l1 l2:natlist, l1 = l2 -> rev l1 = rev l2.
 Proof.
@@ -1194,9 +1233,7 @@ Theorem update_eq :
     find x (update d x v) = Some v.
 Proof.
     intros d x v.
-    simpl. assert(H: beq_id x x = true). 
-    - rewrite <-beq_id_refl. reflexivity.
-    - rewrite H. reflexivity.
+    simpl. rewrite <- beq_id_refl.  reflexivity.
 Qed.
 (** [] *)
 
