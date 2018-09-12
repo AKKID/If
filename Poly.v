@@ -155,6 +155,9 @@ Inductive grumble (X:Type) : Type :=
   | d : mumble -> grumble X
   | e : X -> grumble X.
 
+Check (d mumble (b a 5)).
+Print bool.
+Check  (e mumble (b c 0)).
 (** Which of the following are well-typed elements of [grumble X] for
     some type [X]?
       - [d (b a 5)] X
