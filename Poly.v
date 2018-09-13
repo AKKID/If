@@ -1113,7 +1113,7 @@ Qed.
     mathematician Alonzo Church.  We can represent a natural number
     [n] as a function that takes a function [f] as a parameter and
     returns [f] iterated [n] times. *)
-
+ 
 Module Church.
 Definition nat := forall X : Type, (X -> X) -> X -> X.
 
