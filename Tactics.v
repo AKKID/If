@@ -110,11 +110,9 @@ Theorem rev_exercise1 : forall (l l' : list nat),
      l' = rev l.
 Proof.
   intros l l' H.
-  symmetry.
-  Search rev.
-  rewrite <- rev_involutive.
   rewrite H.
-  reflexivity.
+  symmetry.
+  apply rev_involutive.
 Qed.
   
 
@@ -183,9 +181,9 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-   intros n m o p.
-   intros H0 H1.
-   rewrite <- H0. apply H1.
+   intros n m o p eq1 eq2.
+   apply trans_eq with(m:=m).
+   apply eq2. apply eq1.
 Qed.
 (** [] *)
 
@@ -425,7 +423,7 @@ Theorem plus_n_n_injective : forall n m,
      n = m.
 Proof.
   intros n. induction n as [| n'].
-  - intros. destruct m. 
+  - intros. simpl in H.  destruct m. 
       +  reflexivity.
       +  simpl in H. inversion H.
   - intros m H. destruct m.
@@ -708,9 +706,8 @@ Proof.
 Theorem beq_id_true : forall x y,
   beq_id x y = true -> x = y.
 Proof.
-  intros [m] [n]. simpl. intros H.
-  assert (H' : m = n). { apply beq_nat_true. apply H. }
-  rewrite H'. reflexivity.
+  intros [m] [n]. simpl. intros H. apply f_equal.
+  apply beq_nat_true. apply H.
 Qed.
 
 (** **** Exercise: 3 stars, recommended (gen_dep_practice)  *)
@@ -910,16 +907,10 @@ Fixpoint split {X Y : Type} (l : list (X*Y))
 Theorem list_tl_eq: forall (X:Type) (x:X)(l r:list X),
   (x::l) = (x::r) <-> l = r.
 Proof.
-intros X x.
+  intros X x.
   split.
-  { 
-  induction l as [|n l' IHl'].
-  - intros. destruct r.
-    + reflexivity.
-    + inversion H.
- - destruct r. + intros. inversion H.
-    + intros. inversion H. reflexivity. }
-{ intros. rewrite H. reflexivity. }
+  - intros. inversion H. reflexivity.
+  - intros. rewrite H. reflexivity.
 Qed.
 Require Export Setoid.
 Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
