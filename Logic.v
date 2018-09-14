@@ -226,9 +226,8 @@ Lemma and_example3 :
 Proof.
   (* WORKED IN CLASS *)
   intros n m H.
-  assert (H' : n = 0 /\ m = 0).
-  { apply and_exercise. apply H. }
-  destruct H' as [Hn Hm].
+  apply and_exercise in H.
+  destruct H as [Hn Hm].
   rewrite Hn. reflexivity.
 Qed.
 
@@ -822,19 +821,19 @@ Lemma In_map_iff :
     In y (map f l) <->
     exists x, f x = y /\ In x l.
 Proof.
-   intros A B f l y.
-   split.
-   - induction l as [|n l' IHl'].
-      + intros. simpl in H. destruct H.
-      + simpl. intros [Hf | HI].
-          * exists n. split. { apply Hf. } { left;reflexivity. }
-          * apply IHl' in HI. destruct HI as [x E]. exists x. split.
-             { destruct E as [fxy Inx]. apply fxy. } { right. destruct E as [[] I]. apply I. }
-   -  induction l as [|n l' IHl'].
-      + intros H. destruct H as [x [[] F]].  destruct F.
-      + intros. simpl. destruct H as [x [Hfx HIn]]. simpl in HIn. destruct HIn.
-         * left. rewrite H. apply Hfx. * right. apply IHl'. exists x. Search (_->_->_/\_). apply and_intro. 
-          { apply Hfx. } { apply H. }
+  intros A B f l y.
+  split.
+  - induction l as [|n l' IHl'].
+     + simpl. intros[].
+     + simpl. intros[Hl | Hr].
+        * exists n. split. { apply Hl. } { left. reflexivity. }
+        * apply IHl' in Hr. destruct Hr as [x' [hl hr]].
+           exists x'. split. { apply hl. } { right;apply hr. }
+  - induction  l as [|n l' IHl'].
+      + simpl. intros. destruct H as [x [Hl Hr]];apply Hr.
+      + simpl. intros. destruct H as [x [Hl Hr]]. destruct Hr as [hl | hr].
+         * left. rewrite hl;apply Hl.
+         * right. apply IHl'. exists x. split. apply Hl. apply hr.
 Qed.
 (** [] *)
 
