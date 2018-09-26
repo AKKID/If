@@ -128,6 +128,7 @@ Qed.
 
 (** More generally, we can show that any number multiplied by 2 is even: *)
 
+Print double.
 (** **** Exercise: 1 star (ev_double)  *)
 Theorem ev_double : forall n,
   ev (double n).
@@ -341,6 +342,7 @@ Proof.
   - (* E = ev_0 *)
     exists 0. reflexivity.
   - (* E = ev_SS n' E' *) simpl.
+     Search ev.
 
 (** Unfortunately, the second case is harder.  We need to show [exists
     k, S (S n') = double k], but the only available assumption is
@@ -447,19 +449,14 @@ Theorem ev'_ev : forall n, ev' n <-> ev n.
 Proof.
   intros n.
   split.
-  - intros H'n.
-      induction H'n.
-      + apply ev_0.
-      + apply ev_SS. apply ev_0.
-      + apply ev_sum.
-          * apply IHH'n1. * apply IHH'n2.
- - intros. induction H as [|n' E IHn].
-      + apply ev'_0.
-      + apply (ev'_sum 2 n').
-          * apply ev'_2.
-          * apply IHn.
+  - intros E. induction E.
+     + apply ev_0.
+     + apply ev_SS;apply ev_0.
+     + Search ev. apply ev_sum. apply IHE1. apply IHE2.
+  - intros E. induction E.
+     + apply ev'_0.
+     + apply (ev'_sum 2 n). apply ev'_2. apply IHE.
 Qed.
-
 (** **** Exercise: 3 stars, advanced, recommended (ev_ev__ev)  *)
 (** Finding the appropriate thing to do induction on is a
     bit tricky here: *)
