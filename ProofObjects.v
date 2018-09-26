@@ -215,7 +215,7 @@ Qed.
     number and a piece of evidence) and returns a piece of evidence!
 
     Here it is: *)
-
+Check ev_SS.
 Definition ev_plus4' : forall n, ev n -> ev (4 + n) :=
   fun (n : nat) => fun (H : ev n) =>
     ev_SS (S (S n)) (ev_SS n H).
@@ -461,17 +461,18 @@ Print ev.
 Check ((ev_SS 2 (ev_SS 0 ev_0)) ).
 
 (** Here's how to define an explicit proof object involving [ex]: *)
-Check ev.
+Check ex_intro ev 2 (ev_SS 0 ev_0).
+
 (* ev is a parameter from outside*)
 Definition some_nat_is_even : exists n, ev n :=
-  ex_intro ev 4 (ev_SS 2 (ev_SS 0 ev_0)).
+  ex_intro  ev 4 (ev_SS 2 (ev_SS 0 ev_0)).
 
 (** **** Exercise: 2 stars, optional (ex_ev_Sn)  *)
 (** Complete the definition of the following proof object: *)
 Check (ex (fun n => ev (S n))).
 
 Definition ex_ev_Sn : ex (fun n => ev (S n)) :=
-  ex_intro (fun n => ev (S n)) 3 (ev_SS 2 (ev_SS 0 ev_0)).
+  ex_intro (fun n => ev (S n)) 1 (ev_SS 0 ev_0).
 
 
 (** [] *)
